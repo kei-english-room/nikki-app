@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NIKKI SPACE</title>
+<style>
+:root{
+  --teal:#2b6b65; --teal-dark:#1f4f4a; --bg:#f4efe6; --card:#ffffff;
+  --ink:#243330; --sub:#6b7a76; --line:#e3ddd0; --gold:#c9a227;
+  --pink:#e2603f; --ok:#2e9e5b; --bad:#d9534f;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg); color:var(--ink); font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif; font-size:15px; line-height:1.6;}
+#app{max-width:560px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;}
+header{position:sticky; top:0; z-index:20; background:var(--teal); color:#fff; padding:10px 14px; display:flex; align-items:center; gap:10px;}
+header .logo{font-weight:900; letter-spacing:.06em; font-size:17px;}
+header .spacer{flex:1;}
+#backBtn{background:rgba(255,255,255,.18); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:14px; cursor:pointer;}
+#backBtn[hidden]{display:none;}
+main{flex:1; padding:14px 14px 90px;}
+nav#tabs{position:fixed; left:0; right:0; bottom:0; z-index:20; background:#fff; border-top:1px solid var(--line); display:flex; justify-content:center;}
+nav#tabs .inner{width:100%; max-width:560px; display:flex;}
+nav#tabs button{flex:1; background:none; border:none; padding:9px 0 11px; font-size:12px; color:var(--sub); cursor:pointer;}
+nav#tabs button .ic{display:block; font-size:19px; line-height:1.2;}
+nav#tabs button.on{color:var(--teal); font-weight:700;}
+nav#tabs[hidden]{display:none;}
+.card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:0 0 12px;}
+.kicker{font-size:11px; letter-spacing:.14em; color:var(--teal); font-weight:700; margin:0 0 4px;}
+h1{font-size:21px; margin:0 0 8px; line-height:1.35;}
+h2{font-size:16px; margin:0 0 8px;}
+p{margin:0 0 8px;}
+.sub{color:var(--sub); font-size:13px;}
+.btn{display:block; width:100%; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin:8px 0;}
+.btn.primary{background:var(--teal); color:#fff;}
+.btn.gold{background:var(--gold); color:#fff;}
+.btn.ghost{background:#fff; color:var(--teal); border:1.5px solid var(--teal);}
+.btn.plain{background:#eef3f1; color:var(--ink);}
+.btn.danger{background:#fff; color:var(--bad); border:1.5px solid var(--bad);}
+.btn:disabled{opacity:.45; cursor:default;}
+.btn.small{width:auto; display:inline-block; padding:8px 14px; font-size:13px; margin:4px 4px 4px 0;}
+input[type=text],input[type=password],textarea,select{width:100%; border:1.5px solid var(--line); border-radius:10px; padding:11px; font-size:15px; background:#fff; color:var(--ink); font-family:inherit;}
+textarea{min-height:96px; resize:vertical;}
+label{display:block; font-size:13px; font-weight:700; margin:10px 0 4px;}
+.pill{display:inline-block; background:#fdf3d7; color:#7a5c00; border-radius:999px; padding:2px 10px; font-size:12px; font-weight:700;}
+.badge{display:inline-block; background:var(--teal); color:#fff; border-radius:6px; padding:0 7px; font-size:11px; font-weight:700; vertical-align:2px;}
+.stats{display:flex; gap:8px;}
+.stats .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 6px; text-align:center;}
+.stats .num{font-size:19px; font-weight:900; color:var(--teal-dark);}
+.stats .lbl{font-size:11px; color:var(--sub);}
+.partnerCard{display:flex; gap:12px; align-items:center;}
+.partnerCard svg{flex:none;}
+.frame-leaf{outline:3px solid #58a05c; outline-offset:2px; border-radius:50%;}
+.frame-gold{outline:3px solid var(--gold); outline-offset:2px; border-radius:50%;}
+.diff-del{text-decoration:line-through; color:var(--bad); background:#fdeceb; border-radius:3px; padding:0 2px;}
+.diff-add{color:var(--teal-dark); background:#e2f2ec; border-radius:3px; padding:0 2px; font-weight:700;}
+.word-ok{color:var(--ok); font-weight:700;}
+.word-bad{color:var(--bad); font-weight:700; text-decoration:underline;}
+.hintRow{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line);}
+.hintRow:last-child{border-bottom:none;}
+.en{font-weight:700;}
+.dots{display:flex; gap:6px; margin:6px 0 10px;}
+.dots span{width:9px; height:9px; border-radius:50%; background:#d8d2c2;}
+.dots span.done{background:var(--teal);}
+.dots span.now{background:var(--gold); transform:scale(1.25);}
+#toast{position:fixed; left:50%; bottom:86px; transform:translateX(-50%) translateY(20px); background:#243330; color:#fff; padding:10px 16px; border-radius:999px; font-size:13px; opacity:0; pointer-events:none; transition:.25s; z-index:50; max-width:92vw; text-align:center;}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.loading{text-align:center; padding:60px 0; color:var(--sub);}
+.seg{display:flex; gap:6px; flex-wrap:wrap;}
+.seg button{flex:1; min-width:86px; border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:9px 4px; font-size:13px; cursor:pointer;}
+.seg button.on{border-color:var(--teal); background:#e8f3f0; color:var(--teal-dark); font-weight:700;}
+.shopRow{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line);}
+.shopRow:last-child{border-bottom:none;}
+a{color:var(--teal);}
+.err{background:#fdeceb; border:1px solid #f3c1bf; color:#8c2f2b; border-radius:10px; padding:10px; font-size:13px; margin:8px 0;}
+audio{width:100%; margin:6px 0;}
+.checkLine{font-size:13px; margin:4px 0;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button id="backBtn" hidden>← 戻る</button>
+    <div class="logo">NIKKI SPACE</div>
+    <div class="spacer"></div>
+    <div id="headName" class="sub" style="color:#dcebe8;"></div>
+  </header>
+  <main id="main"><div class="loading">⏳ 読み込み中...</div></main>
+  <nav id="tabs" hidden><div class="inner">
+    <button data-view="home"><span class="ic">🏠</span>ホーム</button>
+    <button data-view="vocab"><span class="ic">📖</span>単語帳</button>
+    <button data-view="diaries"><span class="ic">📓</span>日記</button>
+    <button data-view="partner"><span class="ic">🐣</span>相棒</button>
+    <button data-view="settings"><span class="ic">⚙️</span>設定</button>
+  </div></nav>
+</div>
+<div id="toast"></div>
+<script>
+"use strict";
+/* ================= 共通 ================= */
+var TOKEN_KEY = 'nikki_token';
+var SESSION_KEY = 'nikki_session';
+var VOICE_GENDER_KEY = 'nikki_voice_gender';
+var state = {
+  token: localStorage.getItem(TOKEN_KEY) || '',
+  profile: null,
+  app: null,          // getAppData の結果
+  view: 'loading',
+  session: null,      // 書きかけの日記
+  ondokuDiaryId: null,
+  diaryBackView: 'home',
+  currentDiaryId: null,
+  reviewDoneToday: false
+};
+
+function $(sel){ return document.querySelector(sel); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function toast(msg){ var t = $('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2600); }
+var API_URL = 'https://script.google.com/macros/s/AKfycbzzGWeQsywg1um8DSR4-qJgmYGiFvf2GdR5ccHBFaKS-VYVbnRmxKO9kQ9mnG8Cxinz/exec';
+function run(fn, args, onOk, onErr){
+  var fail = onErr || function(e){ toast(friendlyErr(e)); };
+  fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn: fn, args: args || [] }) })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.ok) { if (onOk) onOk(res.result); }
+      else fail(new Error((res && res.error) || 'サーバーでエラーが発生しました'));
+    })
+    .catch(function(err){ fail(new Error('通信エラーが発生しました。電波の良いところでもう一度お試しください。')); });
+}
+function friendlyErr(e){
+  var m = (e && e.message) ? e.message : String(e);
+  if (m.indexOf('AUTH_REQUIRED:') === 0) { doLogout(true); return 'ログインの有効期限が切れました。もう一度ログインしてください。'; }
+  if (m.indexOf('LIMIT_REACHED:') === 0) return m.replace('LIMIT_REACHED:', '');
+  return m;
+}
+function saveSession(){ if (state.session) localStorage.setItem(SESSION_KEY, JSON.stringify(state.session)); else localStorage.removeItem(SESSION_KEY); }
+function loadSession(){ try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch(e){ return null; } }
+function newSession(){ return { topic:null, topicOther:'', mode:'normal', hintsSkipped:false, questions:[], answers:[], qIndex:0, hints:[], english:'', draft:'', correction:null, checks:[], ondokuDone:false, started:Date.now() }; }
+
+/* ================= 画面遷移 ================= */
+var TAB_VIEWS = ['home','vocab','diaries','partner','settings'];
+function go(view){
+  state.view = view;
+  render();
+  window.scrollTo(0,0);
+}
+function render(){
+  var v = state.view;
+  var tabs = $('#tabs');
+  var isTab = TAB_VIEWS.indexOf(v) >= 0;
+  tabs.hidden = !(state.profile && isTab);
+  var btns = tabs.querySelectorAll('button');
+  btns.forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-view') === v); });
+  var back = $('#backBtn');
+  var backMap = { reuse:'topic', qa:'topic', hints:'qa', write:'hints', correct:'write', topic:'home', done:'home', freewrite:'topic' };
+  var showBack = false, backTo = 'home';
+  if (v === 'diary') { showBack = true; backTo = state.diaryBackView; }
+  else if (v === 'ondoku') { showBack = true; backTo = state.ondokuDiaryId ? 'diary' : 'correct'; }
+  else if (backMap[v]) { showBack = true; backTo = backMap[v]; }
+  if (v === 'write' && state.session && state.session.mode === 'english') { showBack = true; backTo = 'topic'; }
+  if (v === 'hints' && state.session && state.session.mode === 'free') { showBack = true; backTo = 'freewrite'; }
+  back.hidden = !showBack;
+  back.onclick = function(){ go(backTo); };
+  $('#headName').textContent = state.profile ? state.profile.name : '';
+
+  var main = $('#main');
+  if (v === 'loading') main.innerHTML = '<div class="loading">⏳ 読み込み中...</div>';
+  else if (v === 'login') viewLogin(main);
+  else if (v === 'home') viewHome(main);
+  else if (v === 'review') viewReview(main);
+  else if (v === 'topic') viewTopic(main);
+  else if (v === 'reuse') viewReuse(main);
+  else if (v === 'qa') viewQa(main);
+  else if (v === 'freewrite') viewFreeWrite(main);
+  else if (v === 'hints') viewHints(main);
+  else if (v === 'write') viewWrite(main);
+  else if (v === 'correct') viewCorrect(main);
+  else if (v === 'ondoku') viewOndoku(main);
+  else if (v === 'done') viewDone(main);
+  else if (v === 'vocab') viewVocab(main);
+  else if (v === 'diaries') viewDiaries(main);
+  else if (v === 'diary') viewDiary(main);
+  else if (v === 'partner') viewPartner(main);
+  else if (v === 'settings') viewSettings(main);
+}
+document.querySelectorAll('#tabs button').forEach(function(b){
+  b.addEventListener('click', function(){ stopSpeak(); go(b.getAttribute('data-view')); });
+});
+
+/* ================= ログイン・登録 ================= */
+function viewLogin(main){
+  main.innerHTML =
+    '<div class="card" style="text-align:center; padding:26px 18px;">' +
+    '<div style="font-size:34px;">📓</div>' +
+    '<h1>NIKKI SPACE</h1>' +
+    '<p style="font-weight:700; color:var(--teal-dark);">英語日記を、続けよう</p>' +
+    '<p class="sub">生徒IDとパスコードでログインしてください。</p>' +
+    '</div>' +
+    '<div class="card">' +
+    '<label>生徒ID</label><input type="text" id="loginId" autocomplete="username">' +
+    '<label>パスコード</label><input type="password" id="loginPw" autocomplete="current-password">' +
+    '<div id="loginErr"></div>' +
+    '<button class="btn primary" id="loginBtn">ログイン</button>' +
+    '<p class="sub" style="text-align:center;"><a href="#" id="toRegister">はじめての方はこちら（新規登録）</a></p>' +
+    '</div>' +
+    '<div class="card" id="regCard" hidden>' +
+    '<h2>新規登録</h2>' +
+    '<p class="sub">登録を申請すると、先生の承認後にログインできるようになります。</p>' +
+    '<label>お名前</label><input type="text" id="regName">' +
+    '<label>生徒ID（半角英数字）</label><input type="text" id="regId" autocomplete="username">' +
+    '<label>パスコード</label><input type="password" id="regPw" autocomplete="new-password">' +
+    '<label>確認用パスコード</label><input type="password" id="regPw2" autocomplete="new-password">' +
+    '<div id="regErr"></div>' +
+    '<button class="btn gold" id="regBtn">登録を申請する</button>' +
+    '</div>';
+  $('#toRegister').addEventListener('click', function(e){ e.preventDefault(); $('#regCard').hidden = false; });
+  $('#loginBtn').addEventListener('click', function(){
+    var id = $('#loginId').value.trim(), pw = $('#loginPw').value;
+    if (!id || !pw) { $('#loginErr').innerHTML = '<div class="err">生徒IDとパスコードを入力してください。</div>'; return; }
+    var btn = this; btn.disabled = true; btn.textContent = 'ログイン中...';
+    run('login', [id, pw], function(res){
+      state.token = res.token; localStorage.setItem(TOKEN_KEY, res.token);
+      state.profile = res.profile;
+      bootData();
+    }, function(e){ btn.disabled = false; btn.textContent = 'ログイン'; $('#loginErr').innerHTML = '<div class="err">' + esc(friendlyErr(e)) + '</div>'; });
+  });
+  $('#regBtn').addEventListener('click', function(){
+    var name = $('#regName').value.trim(), id = $('#regId').value.trim(), pw = $('#regPw').value, pw2 = $('#regPw2').value;
+    if (!name || !id || !pw) { $('#regErr').innerHTML = '<div class="err">全部の欄を入力してください。</div>'; return; }
+    if (pw !== pw2) { $('#regErr').innerHTML = '<div class="err">確認用パスコードが一致しません。</div>'; return; }
+    var btn = this; btn.disabled = true; btn.textContent = '申請中...';
+    run('registerStudent', [id, pw, name], function(){
+      toast('登録を申請しました。先生の承認をお待ちください。');
+      $('#regCard').hidden = true;
+    }, function(e){ btn.disabled = false; btn.textContent = '登録を申請する'; $('#regErr').innerHTML = '<div class="err">' + esc(friendlyErr(e)) + '</div>'; });
+  });
+}
+function doLogout(silent){
+  stopSpeak();
+  if (state.token) { try { run('logout', [state.token], function(){}, function(){}); } catch(e){} }
+  state.token = ''; state.profile = null; state.app = null;
+  localStorage.removeItem(TOKEN_KEY);
+  if (!silent) toast('ログアウトしました');
+  go('login');
+}
+function bootData(){
+  run('getAppData', [state.token], function(app){
+    state.app = app;
+    state.profile = app.profile;
+    state.session = loadSession();
+    // 起動時：昨日のフレーズがあり、今日まだ復習しておらず、今日の日記もまだなら朝の復習へ
+    var st = app.state;
+    if (app.yesterdayPhrases.length && st.review.lastDate !== app.today && !app.todayDiary) go('review');
+    else go('home');
+  }, function(e){ toast(friendlyErr(e)); go('login'); });
+}
+
+/* ================= 相棒 ================= */
+function partnerStage(lifetime){
+  var stages = (state.app && state.app.stages) || [];
+  var cur = stages[0], next = null;
+  for (var i = 0; i < stages.length; i++) {
+    if (lifetime >= stages[i].at) cur = stages[i];
+    else { next = stages[i]; break; }
+  }
+  return { cur: cur, next: next };
+}
+function partnerSvg(stageId, size){
+  size = size || 74;
+  var body = '#7fc7ba', belly = '#eafaf3', cheek = '#f6b8a0';
+  var inner = '';
+  if (stageId <= 1) {
+    inner = '<ellipse cx="40" cy="46" rx="26" ry="30" fill="#fdfdf8" stroke="#cbbf9f" stroke-width="2"/>' +
+      '<path d="M18 40 Q30 32 40 42 Q50 52 62 42" fill="none" stroke="#cbbf9f" stroke-width="2"/>';
+  } else if (stageId === 2) {
+    inner = '<ellipse cx="40" cy="50" rx="26" ry="26" fill="#fdfdf8" stroke="#cbbf9f" stroke-width="2"/>' +
+      '<circle cx="40" cy="38" r="15" fill="' + body + '"/>' +
+      '<circle cx="35" cy="37" r="2.2" fill="#243330"/><circle cx="45" cy="37" r="2.2" fill="#243330"/>' +
+      '<path d="M37 43 Q40 45 43 43" fill="none" stroke="#243330" stroke-width="1.6"/>' +
+      '<circle cx="31" cy="41" r="3" fill="' + cheek + '"/><circle cx="49" cy="41" r="3" fill="' + cheek + '"/>';
+  } else if (stageId === 3) {
+    inner = '<ellipse cx="40" cy="48" rx="20" ry="22" fill="' + body + '"/>' +
+      '<ellipse cx="40" cy="54" rx="12" ry="13" fill="' + belly + '"/>' +
+      '<circle cx="34" cy="42" r="2.4" fill="#243330"/><circle cx="46" cy="42" r="2.4" fill="#243330"/>' +
+      '<path d="M36 49 Q40 53 44 47" fill="none" stroke="#e2603f" stroke-width="2"/>' +
+      '<circle cx="29" cy="46" r="3.4" fill="' + cheek + '"/><circle cx="51" cy="46" r="3.4" fill="' + cheek + '"/>' +
+      '<path d="M14 30 q-4 6 2 9 M66 30 q4 6 -2 9" stroke="#2b6b65" stroke-width="2" fill="none"/>';
+  } else if (stageId === 4) {
+    inner = '<ellipse cx="40" cy="50" rx="19" ry="21" fill="' + body + '"/>' +
+      '<ellipse cx="40" cy="56" rx="11" ry="12" fill="' + belly + '"/>' +
+      '<path d="M22 44 Q8 40 10 30 Q22 32 24 40 Z" fill="#5aa79b"/>' +
+      '<path d="M58 44 Q72 40 70 30 Q58 32 56 40 Z" fill="#5aa79b"/>' +
+      '<circle cx="34" cy="43" r="2.4" fill="#243330"/><circle cx="46" cy="43" r="2.4" fill="#243330"/>' +
+      '<path d="M37 49 Q40 51 43 49" fill="none" stroke="#243330" stroke-width="1.6"/>' +
+      '<circle cx="29" cy="47" r="3.4" fill="' + cheek + '"/><circle cx="51" cy="47" r="3.4" fill="' + cheek + '"/>' +
+      '<path d="M36 29 q4 -6 8 0" stroke="#2b6b65" stroke-width="2" fill="none"/>';
+  } else {
+    inner = '<ellipse cx="40" cy="50" rx="19" ry="21" fill="' + body + '"/>' +
+      '<ellipse cx="40" cy="56" rx="11" ry="12" fill="' + belly + '"/>' +
+      '<path d="M22 44 Q6 38 9 26 Q23 29 24 40 Z" fill="#5aa79b"/>' +
+      '<path d="M58 44 Q74 38 71 26 Q57 29 56 40 Z" fill="#5aa79b"/>' +
+      '<circle cx="34" cy="43" r="2.4" fill="#243330"/><circle cx="46" cy="43" r="2.4" fill="#243330"/>' +
+      '<path d="M37 49 Q40 52 43 49" fill="none" stroke="#243330" stroke-width="1.6"/>' +
+      '<circle cx="29" cy="47" r="3.4" fill="' + cheek + '"/><circle cx="51" cy="47" r="3.4" fill="' + cheek + '"/>' +
+      '<path d="M33 28 l3 -6 4 5 4 -5 3 6 z" fill="#c9a227"/>' +
+      '<circle cx="63" cy="20" r="7" fill="#a8d8cf"/><circle cx="61" cy="19" r="1.4" fill="#243330"/><circle cx="65" cy="19" r="1.4" fill="#243330"/>';
+  }
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 80 80">' + inner + '</svg>';
+}
+function partnerCardHtml(){
+  var st = state.app.state;
+  var ps = partnerStage(st.points.lifetime);
+  var frameCls = st.owned.frames.indexOf('frame-gold') >= 0 ? 'frame-gold' : (st.owned.frames.indexOf('frame-leaf') >= 0 ? 'frame-leaf' : '');
+  var html = '<div class="card partnerCard"><div class="' + frameCls + '" style="border-radius:50%; line-height:0;">' + partnerSvg(ps.cur.id, 74) + '</div>' +
+    '<div><p class="kicker">NIKKI SPACE</p><h2 style="margin-bottom:2px;">' + esc(ps.cur.name) + '</h2>' +
+    '<p class="sub" style="margin:0;">' + esc(ps.cur.desc) + '　·　累計 ' + st.points.lifetime + ' 点</p></div></div>';
+  return html;
+}
+
+/* ================= ホーム ================= */
+function viewHome(main){
+  var app = state.app, st = app.state;
+  var html = partnerCardHtml();
+  html += '<div class="stats" style="margin-bottom:12px;">' +
+    '<div class="stat"><div class="num">' + st.streak.count + '</div><div class="lbl">連続記録（日）</div></div>' +
+    '<div class="stat"><div class="num">' + st.points.spendable + '</div><div class="lbl">ポイント</div></div>' +
+    '<div class="stat"><div class="num">' + app.vocab.length + '</div><div class="lbl">フレーズ</div></div></div>';
+  if (app.yesterdayPhrases.length && st.review.lastDate !== app.today && !app.todayDiary) {
+    html += '<div class="card"><h2>昨日のフレーズが待っています</h2><p class="sub">朝の復習をしてから、今日の日記に進みましょう。</p>' +
+      '<button class="btn gold" id="homeReview">朝の復習を始める</button></div>';
+  }
+  if (state.session && !app.todayDiary) {
+    html += '<div class="card"><h2>書きかけの日記があります</h2><button class="btn primary" id="homeResume">続きから書く</button></div>';
+  }
+  if (app.todayDiary) {
+    html += '<div class="card"><h2>今日の日記は書けました 🎉</h2><p class="sub">単語帳で復習したり、音読の結果や自分の録音をあとから聞き返せます。</p>' +
+      '<button class="btn primary" id="homeToday">今日の日記を見る</button></div>';
+  } else {
+    html += '<button class="btn primary" id="homeWrite" style="padding:16px; font-size:16px;">✏️ 今日の日記を書く</button>';
+  }
+  html += '<p class="sub" style="text-align:center;">レベル ' + esc(app.profile.level) + '　·　' + accentName(app.profile.accent) + '</p>';
+  main.innerHTML = html;
+  var r = $('#homeReview'); if (r) r.addEventListener('click', function(){ go('review'); });
+  var t = $('#homeToday'); if (t) t.addEventListener('click', function(){ openDiary(app.todayDiary.id, 'home'); });
+  var w = $('#homeWrite'); if (w) w.addEventListener('click', startDiary);
+  var rs = $('#homeResume'); if (rs) rs.addEventListener('click', resumeSession);
+}
+function startDiary(){
+  state.ondokuDiaryId = null;
+  state.session = newSession();
+  saveSession();
+  var app = state.app;
+  if (app.yesterdayPhrases.length && app.state.review.lastDate !== app.today) go('review');
+  else go('topic');
+}
+function resumeSession(){
+  var s = state.session;
+  if (!s) { go('topic'); return; }
+  if (s.mode === 'english') { if (s.correction) go('correct'); else go('write'); return; }
+  if (!s.topic) { go('topic'); return; }
+  if (s.mode === 'free' && !s.answers.length) { go('freewrite'); return; }
+  if (!s.questions.length || s.answers.length < s.questions.length) go('qa');
+  else if (!s.hints.length && !s.hintsSkipped) go('hints');
+  else if (!s.correction) go('write');
+  else go('correct');
+}
+
+/* ================= 朝の復習 ================= */
+function viewReview(main){
+  var phrases = state.app.yesterdayPhrases;
+  var html = '<p class="kicker">朝の復習</p><h1>昨日学んだフレーズ</h1>' +
+    '<p class="sub">聞いて、自分でも言ってみましょう。短く済ませて、今日の日記へ進みます。</p>';
+  if (!phrases.length) {
+    html += '<div class="card"><p>昨日保存したフレーズはありません。テーマ選択から始めましょう。</p></div>';
+  } else {
+    phrases.forEach(function(p, i){
+      html += '<div class="card"><div class="en" style="font-size:16px;">' + esc(p.en) + '</div>' +
+        '<div class="sub">' + esc(p.ja) + '</div>' +
+        (p.example ? '<div class="sub">例：' + esc(p.example) + '</div>' : '') +
+        '<button class="btn plain small" data-play="' + i + '">▶ 再生</button>' +
+        '<button class="btn plain small" data-say="' + i + '">🎤 言ってみる</button>' +
+        '<div class="checkLine" id="revCheck' + i + '"></div></div>';
+    });
+  }
+  html += '<button class="btn primary" id="reviewGo">今日の日記を書く</button>';
+  main.innerHTML = html;
+  main.querySelectorAll('[data-play]').forEach(function(b){
+    b.addEventListener('click', function(){ speak(phrases[Number(b.getAttribute('data-play'))].en); });
+  });
+  main.querySelectorAll('[data-say]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var i = Number(b.getAttribute('data-say'));
+      sayAndCheck(phrases[i].en, $('#revCheck' + i), null);
+    });
+  });
+  $('#reviewGo').addEventListener('click', function(){
+    run('reviewDone', [state.token], function(res){
+      state.app.state = res.state;
+      if (res.gained) toast('朝の復習 +' + res.gained + ' 点');
+      if (!state.session) { state.session = newSession(); saveSession(); }
+      go('topic');
+    });
+  });
+}
+
+/* ================= テーマ・使ってみよう・質問 ================= */
+var TOPIC_LIST = [ ['work','💼 仕事'], ['school','🏫 学校'], ['friend','🧑‍🤝‍🧑 友人'], ['hobby','🎨 趣味'], ['other','✏️ その他'] ];
+function viewTopic(main){
+  var html = '<p class="kicker">今日の日記</p><h1>何について書きたい？</h1>';
+  TOPIC_LIST.forEach(function(t){
+    html += '<button class="btn plain" data-topic="' + t[0] + '" style="text-align:left; font-size:16px;">' + t[1] + '</button>';
+  });
+  html += '<div class="card"><h2>別の書き方</h2>' +
+    '<button class="btn plain" id="freeDiaryBtn" style="text-align:left; font-size:16px; margin-bottom:6px;">✏️ 自由日記（テーマ・質問なし）</button>' +
+    '<button class="btn plain" id="englishBtn" style="text-align:left; font-size:16px;">🇬🇧 いきなり英語で書く</button>' +
+    '<p class="sub">自由日記は、日本語で自由に書いてから英語にします。いきなり英語は、日本語なしで直接英語を書きます。</p></div>';
+  html += '<div class="card" id="otherCard" hidden><label>題材を書いてください</label>' +
+    '<input type="text" id="topicOther" placeholder="例：電車の中、買い物">' +
+    '<button class="btn primary" id="otherGo">この題材で進む</button></div>';
+  main.innerHTML = html;
+  main.querySelectorAll('[data-topic]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var t = b.getAttribute('data-topic');
+      if (t === 'other') { $('#otherCard').hidden = false; $('#topicOther').focus(); return; }
+      chooseTopic(t, '');
+    });
+  });
+  $('#freeDiaryBtn').addEventListener('click', function(){
+    var s = state.session || (state.session = newSession());
+    s.mode = 'free'; s.topic = 'free'; s.topicOther = '';
+    saveSession();
+    go('freewrite');
+  });
+  $('#englishBtn').addEventListener('click', function(){
+    var s = state.session || (state.session = newSession());
+    s.mode = 'english'; s.topic = 'english'; s.topicOther = '';
+    s.questions = []; s.answers = []; s.hints = []; s.hintsSkipped = true;
+    saveSession();
+    go('write');
+  });
+  $('#otherGo').addEventListener('click', function(){
+    var v = $('#topicOther').value.trim();
+    if (!v) { toast('題材を書いてください'); return; }
+    chooseTopic('other', v);
+  });
+}
+function viewFreeWrite(main){
+  var s = state.session;
+  var html = '<p class="kicker">自由日記</p><h1>日本語で自由に書こう</h1>' +
+    '<p class="sub">テーマも質問もありません。今日あったことを、日本語で自由に書いてください。その内容をもとに、ヒントと添削をします。</p>' +
+    '<div class="card"><label>今日あったこと（日本語）</label>' +
+    '<textarea id="freeText" placeholder="今日あったことを、そのまま日本語で" style="min-height:150px;">' + esc(s.answers[0] || '') + '</textarea></div>' +
+    '<button class="btn primary" id="freeHintsBtn">ヒントをもらって英語を書く</button>' +
+    '<button class="btn plain" id="freeSkipBtn">ヒントなしで英語を書く</button>';
+  main.innerHTML = html;
+  function setFree(){
+    var text = $('#freeText').value;
+    s.questions = ['自由に書いたこと'];
+    s.answers = [text];
+    saveSession();
+    return text.trim();
+  }
+  $('#freeHintsBtn').addEventListener('click', function(){
+    if (!setFree()) { toast('まず日本語で書いてみてください'); return; }
+    s.hintsSkipped = false; saveSession();
+    fetchHints(function(){ go('hints'); });
+  });
+  $('#freeSkipBtn').addEventListener('click', function(){
+    setFree();
+    s.hints = []; s.hintsSkipped = true; saveSession();
+    go('write');
+  });
+}
+function chooseTopic(topic, topicOther){
+  state.session.topic = topic;
+  state.session.topicOther = topicOther;
+  state.session.mode = 'normal'; state.session.hintsSkipped = false;
+  saveSession();
+  toast('質問を用意しています...');
+  run('aiQuestions', [state.token, topic, topicOther], function(res){
+    state.session.questions = res.questions;
+    state.session.answers = [];
+    state.session.qIndex = 0;
+    saveSession();
+    if (state.app.yesterdayPhrases.length) go('reuse');
+    else go('qa');
+  }, function(e){ toast(friendlyErr(e)); });
+}
+function viewReuse(main){
+  var phrases = state.app.yesterdayPhrases;
+  var html = '<p class="kicker">昨日のフレーズ</p><h1>昨日学んだフレーズを使ってみよう</h1>' +
+    '<p class="sub">無理に全部入れなくても大丈夫。一文だけでも、今日の日記に使ってみてください。</p><div class="card">';
+  phrases.forEach(function(p){
+    html += '<div class="hintRow"><span><span class="en">' + esc(p.en) + '</span> <span class="badge">昨日</span><br><span class="sub">' + esc(p.ja) + '</span></span></div>';
+  });
+  html += '</div><button class="btn primary" id="reuseGo">質問に進む</button>';
+  main.innerHTML = html;
+  $('#reuseGo').addEventListener('click', function(){ go('qa'); });
+}
+function viewQa(main){
+  var s = state.session;
+  var i = s.qIndex;
+  var dots = '<div class="dots">' + s.questions.map(function(_, k){
+    return '<span class="' + (k < i ? 'done' : (k === i ? 'now' : '')) + '"></span>';
+  }).join('') + '</div>';
+  main.innerHTML = '<p class="kicker">深掘り</p>' + dots +
+    '<h1>' + esc(s.questions[i] || '') + '</h1>' +
+    '<p class="sub">日本語で答えてください。わからなければ、飛ばしても構いません。</p>' +
+    '<textarea id="qaAnswer" placeholder="今日あったことを、日本語で">' + esc(s.answers[i] || '') + '</textarea>' +
+    '<button class="btn primary" id="qaNext">' + (i >= s.questions.length - 1 ? 'ヒントへ進む' : '次へ') + '</button>' +
+    '<button class="btn plain" id="qaSkip">飛ばす</button>';
+  $('#qaNext').addEventListener('click', function(){ qaAdvance($('#qaAnswer').value); });
+  $('#qaSkip').addEventListener('click', function(){ qaAdvance(''); });
+}
+function qaAdvance(value){
+  var s = state.session;
+  s.answers[s.qIndex] = value;
+  saveSession();
+  if (s.qIndex < s.questions.length - 1) {
+    s.qIndex++;
+    saveSession();
+    go('qa');
+  } else {
+    fetchHints(function(){ go('hints'); });
+  }
+}
+function fetchHints(done){ fetchHintsTry(done, 0); }
+function fetchHintsTry(done, attempt){
+  var s = state.session;
+  toast('ヒントを用意しています...');
+  run('aiHints', [state.token, {
+    topic: s.topic, topicOther: s.topicOther,
+    questions: s.questions, answers: s.answers,
+    level: state.app.profile.level,
+    yesterdayPhrases: state.app.yesterdayPhrases
+  }], function(res){
+    var hints = state.app.yesterdayPhrases.map(function(p){ return { en: p.en, ja: p.ja + '（昨日のフレーズ）', yesterday: true }; });
+    var seen = {};
+    hints.forEach(function(h){ seen[h.en.toLowerCase()] = true; });
+    (res.hints || []).forEach(function(h){ if (!seen[h.en.toLowerCase()]) { hints.push(h); seen[h.en.toLowerCase()] = true; } });
+    s.hints = hints.slice(0, 8);
+    saveSession();
+    if (done) done();
+  }, function(e){
+    if (attempt < 1) { fetchHintsTry(done, attempt + 1); }
+    else toast(friendlyErr(e));
+  });
+}
+
+/* ================= ヒント・執筆 ================= */
+function viewHints(main){
+  var s = state.session;
+  var html = '<p class="kicker">ヒント</p><h1>使える単語・表現</h1>' +
+    '<p class="sub">今日の日記に使えそうな語です。全部使わなくても大丈夫。</p><div class="card">';
+  if (!s.hints.length) {
+    html += '<p>ヒントを取得できませんでした。通信の具合かもしれません。</p>';
+  }
+  s.hints.forEach(function(h){
+    html += '<div class="hintRow"><span class="en">' + esc(h.en) + '</span><span class="sub">' + esc(h.ja) + (h.yesterday ? ' <span class="badge">昨日のフレーズ</span>' : '') + '</span></div>';
+  });
+  html += '</div>';
+  if (!s.hints.length) html += '<button class="btn gold" id="hintsRetry">ヒントをもう一度取得する</button>';
+  html += '<button class="btn primary" id="hintsGo">英文を書いてみる</button>';
+  main.innerHTML = html;
+  var hr = $('#hintsRetry');
+  if (hr) hr.addEventListener('click', function(){ fetchHints(function(){ go('hints'); }); });
+  $('#hintsGo').addEventListener('click', function(){ go('write'); });
+}
+function qaCardHtml(){
+  var s = state.session;
+  if (!s.questions.length) return '';
+  var html = '<div class="card"><h2>あなたが日本語で書いたこと</h2>';
+  s.questions.forEach(function(q, i){
+    html += '<p style="margin-bottom:4px;"><span class="sub">' + esc(q) + '</span><br>' + esc(s.answers[i] || '（無記入）') + '</p>';
+  });
+  html += '</div>';
+  return html;
+}
+function viewWrite(main){
+  var s = state.session;
+  var level = state.app.profile.level;
+  var guide = level === '1' ? 'まずは自分で書いてみてください。上の日本語を見ながら英語にします。止まったら、下書きボタンを押せます。'
+    : level === '3' ? '上の日本語を見ながら、自分の言葉で書いてみましょう。'
+    : '上の日本語を見ながら書いてください。わかるところは英語、わからないところは日本語でも大丈夫です。';
+  if (s.mode === 'english') guide = '日本語は使わず、直接英語で書いてみましょう。わからないところは飛ばしても大丈夫です。';
+  var kicker = s.mode === 'english' ? 'いきなり英語' : (s.mode === 'free' ? '自由日記' : 'レベル ' + esc(level) + '　執筆');
+  var html = '<p class="kicker">' + kicker + '</p><h1>英文を書いてみよう</h1>' +
+    '<p class="sub">' + guide + '</p>' + qaCardHtml();
+  if (state.app.yesterdayPhrases.length) {
+    html += '<div class="card"><h2>昨日のフレーズ</h2>' + state.app.yesterdayPhrases.map(function(p){
+      return '<p style="margin:2px 0;"><span class="en">' + esc(p.en) + '</span> <span class="sub">' + esc(p.ja) + '</span></p>';
+    }).join('') + '</div>';
+  }
+  if (level === '1' && s.answers.length) {
+    html += '<button class="btn plain" id="draftBtn">下書きを見る</button><div id="draftArea"></div>';
+  }
+  html += '<label>今日の日記（英語）</label><textarea id="english" placeholder="I ..." style="min-height:130px;">' + esc(s.english || '') + '</textarea>' +
+    '<button class="btn primary" id="correctBtn">添削してもらう</button>';
+  main.innerHTML = html;
+  var ta = $('#english');
+  ta.addEventListener('input', function(){ state.session.english = ta.value; saveSession(); });
+  var db = $('#draftBtn');
+  if (db) db.addEventListener('click', function(){
+    db.disabled = true; db.textContent = '下書きを作っています...';
+    run('aiDraft', [state.token, {
+      topic: s.topic, topicOther: s.topicOther,
+      questions: s.questions, answers: s.answers,
+      hints: s.hints, yesterdayPhrases: state.app.yesterdayPhrases
+    }], function(res){
+      state.session.draft = res.draft; saveSession();
+      $('#draftArea').innerHTML = '<div class="card"><h2>下書き</h2><p>' + esc(res.draft) + '</p>' +
+        '<button class="btn gold small" id="useDraft">下書きを使う</button></div>';
+      $('#useDraft').addEventListener('click', function(){
+        ta.value = res.draft; state.session.english = res.draft; saveSession();
+        toast('下書きを入れました');
+      });
+      db.disabled = false; db.textContent = '下書きを見る';
+    }, function(e){ db.disabled = false; db.textContent = '下書きを見る'; toast(friendlyErr(e)); });
+  });
+  $('#correctBtn').addEventListener('click', function(){
+    var english = ta.value.trim();
+    if (!english) { toast('英文を書いてから進んでください'); return; }
+    state.session.english = english; saveSession();
+    var btn = this; btn.disabled = true; btn.textContent = '添削しています...';
+    run('aiCorrect', [state.token, {
+      english: english,
+      questions: s.questions, answers: s.answers,
+      yesterdayPhrases: state.app.yesterdayPhrases,
+      level: state.app.profile.level,
+      topic: s.topic, topicOther: s.topicOther
+    }], function(res){
+      state.session.correction = res;
+      saveSession();
+      go('correct');
+    }, function(e){ btn.disabled = false; btn.textContent = '添削してもらう'; toast(friendlyErr(e)); });
+  });
+}
+
+/* ================= 音声（読み上げ・録音・発音チェック） ================= */
+var ACCENT_NAMES = { 'en-US':'アメリカ英語', 'en-GB':'イギリス英語', 'en-CA':'カナダ英語', 'en-AU':'オーストラリア英語', 'en-NZ':'ニュージーランド英語' };
+function accentName(a){ return ACCENT_NAMES[a] || 'アメリカ英語'; }
+var NOVELTY_VOICES = ['Albert','Bad News','Bahh','Bells','Boing','Bubbles','Cellos','Deranged','Fred','Good News','Grandma','Grandpa','Hysterical','Jester','Junior','Organ','Pipe Organ','Superstar','Trinoids','Whisper','Wobble','Zarvox'];
+var VOICE_PREF = {
+  'en-US': ['Samantha','Ava','Allison','Susan','Zoe','Joelle','Nicky','Google US English','Aaron','Nathan','Arthur'],
+  'en-GB': ['Daniel','Kate','Serena','Martha','Stephanie','Google UK English Female','Google UK English Male','George','Brian'],
+  'en-CA': ['Victoria','Google US English','Samantha'],
+  'en-AU': ['Karen','Lee','Catherine','Google UK English Female'],
+  'en-NZ': ['Karen','Lee','Daniel']
+};
+var FEMALE_NAMES = ['Samantha','Ava','Allison','Susan','Zoe','Joelle','Nicky','Kate','Serena','Martha','Stephanie','Karen','Catherine','Victoria','Fiona','Moira','Tessa','Veena','Google UK English Female'];
+var MALE_NAMES = ['Aaron','Nathan','Arthur','Daniel','Lee','George','Brian','Alex','David','Google UK English Male','Google US English'];
+var voiceCache = [];
+function refreshVoices(){ try { voiceCache = window.speechSynthesis ? speechSynthesis.getVoices() : []; } catch(e){ voiceCache = []; } }
+if (window.speechSynthesis) { refreshVoices(); speechSynthesis.onvoiceschanged = refreshVoices; }
+function pickVoice(accent){
+  var gender = localStorage.getItem(VOICE_GENDER_KEY) || 'auto';
+  var fallbacks = { 'en-NZ':['en-NZ','en-AU','en-GB','en-US'], 'en-CA':['en-CA','en-US','en-GB'], 'en-AU':['en-AU','en-GB','en-US'], 'en-GB':['en-GB','en-AU','en-US'], 'en-US':['en-US','en-GB'] };
+  var chain = fallbacks[accent] || ['en-US'];
+  var usable = voiceCache.filter(function(v){ return NOVELTY_VOICES.indexOf(v.name) < 0 && /^en/i.test(v.lang); });
+  for (var c = 0; c < chain.length; c++) {
+    var lang = chain[c];
+    var cands = usable.filter(function(v){ return v.lang.replace('_','-').toLowerCase().indexOf(lang.toLowerCase()) === 0; });
+    if (!cands.length) continue;
+    if (gender !== 'auto') {
+      var names = gender === 'female' ? FEMALE_NAMES : MALE_NAMES;
+      var g = cands.filter(function(v){ return names.indexOf(v.name) >= 0; });
+      if (g.length) cands = g;
+    }
+    var neural = cands.filter(function(v){ return /Google/.test(v.name); });
+    if (neural.length) return neural[0];
+    var prem = cands.filter(function(v){ return /Premium|Enhanced/.test(v.name); });
+    if (prem.length) cands = prem;
+    var pref = VOICE_PREF[lang] || [];
+    for (var p = 0; p < pref.length; p++) {
+      for (var i = 0; i < cands.length; i++) { if (cands[i].name === pref[p]) return cands[i]; }
+    }
+    return cands[0];
+  }
+  return usable[0] || null;
+}
+var currentUtter = null;
+function speak(text, opts){
+  opts = opts || {};
+  if (!window.speechSynthesis) { toast('このブラウザでは読み上げが使えません'); return; }
+  stopSpeak();
+  var u = new SpeechSynthesisUtterance(text);
+  var accent = state.app ? state.app.profile.accent : 'en-US';
+  var v = pickVoice(accent);
+  if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = accent; }
+  var speed = opts.speed || 'normal';
+  u.rate = speed === 'slow' ? 0.75 : (speed === 'fast' ? 1.15 : 1);
+  currentUtter = u;
+  speechSynthesis.speak(u);
+  if (opts.onStart) opts.onStart();
+}
+function stopSpeak(){ if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e){} } currentUtter = null; }
+
+/* 発音チェック：お手本の各単語が聞き取り結果に含まれているか（点数は出さない） */
+function tokenizeWords(s){
+  return String(s || '').toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9' ]/g, ' ').split(/\s+/).filter(function(w){ return !!w; });
+}
+function compareWords(model, heard){
+  var heardSet = {};
+  tokenizeWords(heard).forEach(function(w){ heardSet[w] = true; });
+  return tokenizeWords(model).map(function(w){ return { word: w, ok: !!heardSet[w] }; });
+}
+function checkHtml(words, heard){
+  var spans = words.map(function(w){ return '<span class="' + (w.ok ? 'word-ok' : 'word-bad') + '">' + esc(w.word) + '</span>'; }).join(' ');
+  var bad = words.filter(function(w){ return !w.ok; }).slice(0, 6);
+  var html = '<p style="font-size:16px; line-height:1.9;">' + spans + '</p>' +
+    '<p class="sub">あなた: ' + esc(heard) + '</p>';
+  if (bad.length) html += '<p>直してみたい語：' + bad.map(function(w){ return '「' + esc(w.word) + '」'; }).join('、') + '。お手本をもう一度聞いて、ゆっくり言ってみてください。</p>';
+  else html += '<p>お手本の語を、一通り言えています。もう一度お手本と聞き比べてみましょう。</p>';
+  return html;
+}
+function sayAndCheck(modelText, targetEl, onDone){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { targetEl.innerHTML = '<p class="sub">このブラウザでは音声認識が使えません。お手本を聞いて、自分で繰り返してください。</p>'; return; }
+  var rec = new SR();
+  rec.lang = state.app ? state.app.profile.accent : 'en-US';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  targetEl.innerHTML = '<p class="sub">聞いています…お手本の文を、声に出してください。</p>';
+  var finished = false;
+  rec.onresult = function(ev){
+    finished = true;
+    var heard = ev.results[0][0].transcript || '';
+    var words = compareWords(modelText, heard);
+    targetEl.innerHTML = checkHtml(words, heard);
+    if (onDone) onDone({ heard: heard, words: words, accent: state.app.profile.accent, at: new Date().toISOString() });
+  };
+  rec.onerror = function(){ if (!finished) targetEl.innerHTML = '<p class="sub">うまく聞き取れませんでした。マイクの許可を確認して、もう一度どうぞ。</p>'; };
+  rec.onend = function(){ if (!finished && !targetEl.querySelector('.word-ok') && !targetEl.querySelector('.word-bad')) { /* 結果なし */ } };
+  try { rec.start(); } catch(e){ targetEl.innerHTML = '<p class="sub">音声認識を始められませんでした。</p>'; }
+}
+
+/* 録音（端末内 IndexedDB にだけ保存） */
+var recDb = null;
+function recDbOpen(cb){
+  if (recDb) { cb(recDb); return; }
+  var req = indexedDB.open('nikki-rec', 1);
+  req.onupgradeneeded = function(){ var db = req.result; var st = db.createObjectStore('audio', { autoIncrement: true }); st.createIndex('diaryId', 'diaryId', { unique: false }); };
+  req.onsuccess = function(){ recDb = req.result; cb(recDb); };
+  req.onerror = function(){ cb(null); };
+}
+function recSave(diaryId, blob, cb){
+  recDbOpen(function(db){
+    if (!db) { cb && cb(false); return; }
+    var tx = db.transaction('audio', 'readwrite');
+    tx.objectStore('audio').add({ diaryId: diaryId, at: Date.now(), type: blob.type, blob: blob });
+    tx.oncomplete = function(){
+      // 1日記3件まで（古いものから消す）
+      recList(diaryId, function(items){
+        if (items.length > 3) {
+          var tx2 = db.transaction('audio', 'readwrite');
+          items.slice(0, items.length - 3).forEach(function(it){ tx2.objectStore('audio').delete(it.key); });
+          tx2.oncomplete = function(){ cb && cb(true); };
+        } else cb && cb(true);
+      });
+    };
+    tx.onerror = function(){ cb && cb(false); };
+  });
+}
+function recList(diaryId, cb){
+  recDbOpen(function(db){
+    if (!db) { cb([]); return; }
+    var out = [];
+    var idx = db.transaction('audio', 'readonly').objectStore('audio').index('diaryId');
+    var req = idx.openCursor(IDBKeyRange.only(diaryId));
+    req.onsuccess = function(){
+      var cur = req.result;
+      if (cur) { out.push({ key: cur.primaryKey, at: cur.value.at, type: cur.value.type, blob: cur.value.blob }); cur.continue(); }
+      else { out.sort(function(a,b){ return b.at - a.at; }); cb(out); }
+    };
+    req.onerror = function(){ cb([]); };
+  });
+}
+function recMovePending(diaryId, cb){
+  recList('__pending', function(items){
+    if (!items.length) { cb && cb(); return; }
+    recDbOpen(function(db){
+      if (!db) { cb && cb(); return; }
+      var tx = db.transaction('audio', 'readwrite');
+      var store = tx.objectStore('audio');
+      items.forEach(function(it){
+        store.delete(it.key);
+        store.add({ diaryId: diaryId, at: it.at, type: it.type, blob: it.blob });
+      });
+      tx.oncomplete = function(){ cb && cb(); };
+      tx.onerror = function(){ cb && cb(); };
+    });
+  });
+}
+var mediaRecorder = null, recChunks = [];
+function startRecording(onBlob){
+  if (!navigator.mediaDevices || !window.MediaRecorder) { toast('このブラウザでは録音できません'); return null; }
+  return navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+    recChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = function(e){ if (e.data && e.data.size) recChunks.push(e.data); };
+    mediaRecorder.onstop = function(){
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      var blob = new Blob(recChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      onBlob(blob);
+    };
+    mediaRecorder.start();
+    return mediaRecorder;
+  }).catch(function(){ toast('マイクを使えませんでした'); return null; });
+}
+
+/* ================= 添削結果 ================= */
+function diffTokens(a, b){
+  function tok(s){ return String(s || '').match(/[A-Za-z0-9']+|\s+|[^\sA-Za-z0-9']/g) || []; }
+  var A = tok(a), B = tok(b);
+  var n = A.length, m = B.length;
+  var dp = [];
+  for (var i = 0; i <= n; i++) { dp.push(new Array(m + 1).fill(0)); }
+  for (var x = n - 1; x >= 0; x--) for (var y = m - 1; y >= 0; y--) {
+    dp[x][y] = A[x] === B[y] ? dp[x + 1][y + 1] + 1 : Math.max(dp[x + 1][y], dp[x][y + 1]);
+  }
+  var out = [], i2 = 0, j2 = 0;
+  while (i2 < n && j2 < m) {
+    if (A[i2] === B[j2]) { out.push({ t: 'same', s: A[i2] }); i2++; j2++; }
+    else if (dp[i2 + 1][j2] >= dp[i2][j2 + 1]) { out.push({ t: 'del', s: A[i2] }); i2++; }
+    else { out.push({ t: 'add', s: B[j2] }); j2++; }
+  }
+  while (i2 < n) { out.push({ t: 'del', s: A[i2] }); i2++; }
+  while (j2 < m) { out.push({ t: 'add', s: B[j2] }); j2++; }
+  return out;
+}
+function diffHtml(original, corrected, mode){
+  var parts = diffTokens(original, corrected);
+  return parts.map(function(p){
+    if (p.t === 'same') return esc(p.s);
+    if (mode === 'original' && p.t === 'del') return '<span class="diff-del">' + esc(p.s) + '</span>';
+    if (mode === 'original') return '';
+    if (p.t === 'add') return '<span class="diff-add">' + esc(p.s) + '</span>';
+    return '';
+  }).join('');
+}
+function viewCorrect(main){
+  var c = state.session.correction;
+  if (!c) { go('write'); return; }
+  var html = '<p class="kicker">添削</p><h1>直したところを見てみよう</h1>' + qaCardHtml();
+  html += '<div class="card"><h2>あなたの英文</h2><p style="font-size:16px; line-height:1.9;">' + diffHtml(c.original, c.corrected, 'original') + '</p></div>';
+  html += '<div class="card"><h2>添削後</h2><p style="font-size:16px; line-height:1.9;">' + diffHtml(c.original, c.corrected, 'corrected') + '</p></div>';
+  html += '<div class="card"><h2>もっと自然な言い方</h2><p style="font-size:16px;">' + esc(c.natural) + '</p>' +
+    (c.natural === c.corrected ? '<p class="sub">添削後の文で、十分自然です。</p>' : '') + '</div>';
+  html += '<div class="card"><h2>直した理由</h2>';
+  if (c.reasons && c.reasons.length) {
+    c.reasons.forEach(function(r){
+      html += '<p style="margin-bottom:6px;"><strong>' + esc(r.change) + '</strong>' + (r.reason ? '<br><span class="sub">' + esc(r.reason) + '</span>' : '') + '</p>';
+    });
+  } else {
+    html += '<p>直すところは見つかりませんでした。この文はそのままで大丈夫です。</p>';
+  }
+  html += '</div>';
+  if (c.praise) html += '<div class="card"><h2>先生から</h2><p>' + esc(c.praise) + '</p></div>';
+  if (c.missing && c.missing.length) {
+    html += '<div class="card"><h2>書けなかった部分のお手本</h2><p class="sub">日本語で書いたのに、英語にできなかったところです。こう言えます。</p>' +
+      c.missing.map(function(m){
+        return '<p style="margin-bottom:8px;">' + (m.ja ? '<span class="sub">' + esc(m.ja) + '</span><br>' : '') + '<span style="font-size:16px;">' + esc(m.en) + '</span></p>';
+      }).join('') + '</div>';
+  }
+  html += '<button class="btn primary" id="toOndoku">音読する</button>';
+  main.innerHTML = html;
+  $('#toOndoku').addEventListener('click', function(){ state.ondokuDiaryId = null; go('ondoku'); });
+}
+
+/* ================= 音読 ================= */
+function ondokuText(){
+  if (state.ondokuDiaryId) {
+    var d = findDiary(state.ondokuDiaryId);
+    return d ? (d.corrected || d.english) : '';
+  }
+  return state.session && state.session.correction ? state.session.correction.corrected : '';
+}
+function findDiary(id){
+  var list = state.app ? state.app.diaries : [];
+  for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+  return null;
+}
+function viewOndoku(main){
+  var text = ondokuText();
+  var isRe = !!state.ondokuDiaryId;
+  var html = '<p class="kicker">音読</p><h1>聞いて、言って、録る</h1>' +
+    '<div class="card"><p style="font-size:16px; line-height:1.9;">' + esc(text) + '</p>' +
+    '<label>アクセント</label><div class="seg" id="accentSeg">' +
+    Object.keys(ACCENT_NAMES).map(function(a){
+      return '<button data-accent="' + a + '" class="' + (state.app.profile.accent === a ? 'on' : '') + '">' + ACCENT_NAMES[a].replace('英語','') + '</button>';
+    }).join('') + '</div>' +
+    '<label>速さ</label><div class="seg" id="speedSeg">' +
+    [['slow','遅い'],['normal','標準'],['fast','早い']].map(function(s){
+      return '<button data-speed="' + s[0] + '" class="' + (s[0] === 'normal' ? 'on' : '') + '">' + s[1] + '</button>';
+    }).join('') + '</div>' +
+    '<button class="btn primary" id="playBtn">▶ お手本を再生</button>' +
+    '<button class="btn plain" id="stopBtn">⏹ 停止</button></div>' +
+    '<div class="card"><h2>自分の声</h2>' +
+    '<button class="btn plain" id="recBtn">🎙 録音する</button>' +
+    '<button class="btn plain" id="recPlayBtn">録音を再生</button>' +
+    '<div id="recAudio"></div>' +
+    '<p class="sub">録音はこの端末の中だけに残ります。</p></div>' +
+    '<div class="card"><h2>発音チェック</h2>' +
+    '<p class="sub">音声認識が使えるブラウザでは、言った語とお手本を照らし、直したい語を色分けします。点数は出しません。</p>' +
+    '<button class="btn gold" id="checkBtn">言ってチェックする</button>' +
+    '<div id="checkResult" style="margin-top:8px;"></div>' +
+    '<p class="sub">アプリの中でマイクが使えないときは、専用ページでも発音チェックと録音ができます（新しいタブで開きます）。</p>' +
+    '<button class="btn plain" id="micPageBtn">🎙 マイク専用ページを開く</button></div>' +
+    '<button class="btn primary" id="ondokuSave">' + (isRe ? '保存して日記に戻る' : '保存して終わる') + '</button>';
+  main.innerHTML = html;
+  var speed = 'normal';
+  main.querySelectorAll('#speedSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      main.querySelectorAll('#speedSeg button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on'); speed = b.getAttribute('data-speed');
+    });
+  });
+  main.querySelectorAll('#accentSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      var a = b.getAttribute('data-accent');
+      run('setAccent', [state.token, a], function(profile){
+        state.app.profile = profile;
+        main.querySelectorAll('#accentSeg button').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-accent') === a); });
+        toast('アクセントを ' + ACCENT_NAMES[a] + ' にしました');
+      });
+    });
+  });
+  $('#playBtn').addEventListener('click', function(){
+    speak(text, { speed: speed });
+    if (!isRe && state.session) { state.session.ondokuDone = true; saveSession(); }
+  });
+  $('#stopBtn').addEventListener('click', stopSpeak);
+  var lastBlob = null;
+  $('#recBtn').addEventListener('click', function(){
+    var btn = this;
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      btn.textContent = '🎙 録音する';
+      return;
+    }
+    stopSpeak();
+    startRecording(function(blob){
+      lastBlob = blob;
+      var diaryKey = state.ondokuDiaryId || '__pending';
+      recSave(diaryKey, blob, function(ok){ toast(ok ? '録音しました' : '録音を保存できませんでした'); });
+      if (!isRe && state.session) { state.session.ondokuDone = true; saveSession(); }
+      $('#recAudio').innerHTML = '<audio controls src="' + URL.createObjectURL(blob) + '"></audio>';
+    }).then(function(mr){ if (mr) btn.textContent = '⏹ 録音を止める'; });
+  });
+  $('#recPlayBtn').addEventListener('click', function(){
+    var diaryKey = state.ondokuDiaryId || '__pending';
+    recList(diaryKey, function(items){
+      if (!items.length) { toast('まだ録音がありません'); return; }
+      $('#recAudio').innerHTML = '<audio controls autoplay src="' + URL.createObjectURL(items[0].blob) + '"></audio>';
+    });
+  });
+  $('#micPageBtn').addEventListener('click', function(){
+    var url = 'https://kei-english-room.github.io/nikki-mic/?text=' + encodeURIComponent(text) + '&accent=' + encodeURIComponent(state.app.profile.accent || 'en-US');
+    window.open(url, '_blank');
+  });
+  $('#checkBtn').addEventListener('click', function(){
+    sayAndCheck(text, $('#checkResult'), function(check){
+      if (!isRe && state.session) {
+        state.session.checks.unshift(check);
+        state.session.checks = state.session.checks.slice(0, 5);
+        state.session.ondokuDone = true;
+        saveSession();
+      } else if (isRe) {
+        run('addPronunciationCheck', [state.token, state.ondokuDiaryId, check], function(){
+          var d = findDiary(state.ondokuDiaryId);
+          if (d) { d.pronunciationChecks.unshift(check); d.pronunciationChecks = d.pronunciationChecks.slice(0, 5); }
+          toast('発音チェックの結果を保存しました');
+        });
+      }
+    });
+  });
+  $('#ondokuSave').addEventListener('click', function(){
+    if (isRe) { toast('音読の記録を保存しました'); go('diary'); return; }
+    var s = state.session;
+    var btn = this; btn.disabled = true; btn.textContent = '保存しています...';
+    run('saveDiary', [state.token, {
+      topic: s.topic, topicOther: s.topicOther,
+      questions: s.questions, answers: s.answers,
+      english: s.english, correction: s.correction,
+      pronunciationChecks: s.checks, ondokuDone: !!s.ondokuDone
+    }], function(res){
+      state.app.state = res.state;
+      state.lastSave = res;
+      recMovePending(res.diaryId, function(){
+        state.session = null; saveSession();
+        run('getAppData', [state.token], function(app){ state.app = app; go('done'); }, function(){ go('done'); });
+      });
+    }, function(e){ btn.disabled = false; btn.textContent = '保存して終わる'; toast(friendlyErr(e)); });
+  });
+}
+
+/* ================= 完了 ================= */
+function viewDone(main){
+  var res = state.lastSave || { gained: {}, addedVocab: [] };
+  var st = state.app.state;
+  var ps = partnerStage(st.points.lifetime);
+  var gainedRows = [];
+  var labels = { diary: '日記を書いて添削まで完了', reuse: '昨日のフレーズを使えた', ondoku: '今日の日記を音読した', review: '朝の復習' };
+  Object.keys(res.gained || {}).forEach(function(k){
+    if (res.gained[k]) gainedRows.push('<div class="hintRow"><span>' + labels[k] + '</span><strong>+' + res.gained[k] + ' 点</strong></div>');
+  });
+  var html = '<p class="kicker">今日の記録</p><h1>よく書けました 🎉</h1>' + partnerCardHtml() +
+    '<div class="card"><h2>ポイント</h2>' +
+    (gainedRows.length ? gainedRows.join('') : '<p class="sub">今日の加点はありません（上限に達しているか、すでに付与済みです）。</p>') +
+    '<p class="sub">累計 ' + st.points.lifetime + ' 点　·　連続 ' + st.streak.count + ' 日</p></div>' +
+    '<div class="card"><h2>単語帳に入れた語（最大5）</h2>' +
+    ((res.addedVocab && res.addedVocab.length)
+      ? res.addedVocab.map(function(p){ return '<div class="hintRow"><span class="en">' + esc(p.en) + '</span><span class="sub">' + esc(p.ja) + '</span></div>'; }).join('')
+      : '<p class="sub">新しい語はありませんでした。</p>') +
+    '</div>' +
+    '<p class="sub">発音チェックの結果と自分の録音は、ホームの「今日の日記を見る」か、下のボタンからあとで見られます。録音はこの端末にだけ残ります。</p>' +
+    '<button class="btn primary" id="doneDiary">今日の日記を見る</button>' +
+    '<button class="btn plain" id="doneHome">ホームへ</button>';
+  main.innerHTML = html;
+  $('#doneHome').addEventListener('click', function(){ go('home'); });
+  $('#doneDiary').addEventListener('click', function(){
+    if (state.app.todayDiary) openDiary(state.app.todayDiary.id, 'home');
+    else go('diaries');
+  });
+}
+
+/* ================= 単語帳 ================= */
+function viewVocab(main){
+  var vocab = state.app.vocab;
+  if (!vocab.length) {
+    main.innerHTML = '<p class="kicker">単語帳</p><h1>単語帳</h1><div class="card"><p>まだフレーズはありません。日記を書くと、ここに残ります。</p></div>';
+    return;
+  }
+  var byDate = {};
+  vocab.forEach(function(v){ (byDate[v.date] = byDate[v.date] || []).push(v); });
+  var dates = Object.keys(byDate).sort().reverse();
+  var yesterday = state.app.yesterdayPhrases.length ? state.app.diaries : null;
+  var yDate = dates.filter(function(d){ return d !== state.app.today; })[0];
+  var html = '<p class="kicker">単語帳</p><h1>単語帳</h1><p class="sub">過去の語を、いつでも聞いて復習できます。</p>';
+  dates.forEach(function(d){
+    html += '<div class="card"><h2>' + esc(d) + (yDate === d ? ' <span class="badge">昨日</span>' : '') + '</h2>';
+    byDate[d].forEach(function(v, i){
+      html += '<div class="hintRow"><span><span class="en">' + esc(v.en) + '</span><br><span class="sub">' + esc(v.ja) + (v.example ? '　例：' + esc(v.example) : '') + '</span></span>' +
+        '<button class="btn plain small" data-ven="' + esc(v.en) + '">▶ 再生</button></div>';
+    });
+    html += '</div>';
+  });
+  main.innerHTML = html;
+  main.querySelectorAll('[data-ven]').forEach(function(b){
+    b.addEventListener('click', function(){ speak(b.getAttribute('data-ven')); });
+  });
+}
+
+/* ================= 日記一覧・詳細 ================= */
+function openDiary(id, backView){
+  state.currentDiaryId = id;
+  state.diaryBackView = backView || 'diaries';
+  go('diary');
+}
+function topicLabel(d){
+  var names = { work:'仕事', school:'学校', friend:'友人', hobby:'趣味', other:'その他', free:'自由日記', english:'英語で書く' };
+  return d.topic === 'other' && d.topicOther ? d.topicOther : (names[d.topic] || d.topic);
+}
+function viewDiaries(main){
+  var list = state.app.diaries;
+  var html = '<p class="kicker">日記</p><h1>日記</h1><p class="sub">カードを開くと、添削後の英文、お手本、自分の録音、発音チェックの結果を見られます。</p>';
+  if (!list.length) html += '<div class="card"><p>まだ日記はありません。</p></div>';
+  list.forEach(function(d){
+    html += '<div class="card" data-diary="' + esc(d.id) + '" style="cursor:pointer;"><h2>' + esc(d.date) + '　·　' + esc(topicLabel(d)) + '</h2>' +
+      '<p>' + esc(String(d.corrected || d.english || '').slice(0, 90)) + '...</p>' +
+      '<p class="sub">' + (d.pronunciationChecks && d.pronunciationChecks.length ? '発音チェック ' + d.pronunciationChecks.length + '回　' : '') + 'くわしく見る →</p></div>';
+  });
+  main.innerHTML = html;
+  main.querySelectorAll('[data-diary]').forEach(function(c){
+    c.addEventListener('click', function(){ openDiary(c.getAttribute('data-diary'), 'diaries'); });
+  });
+}
+function viewDiary(main){
+  var d = findDiary(state.currentDiaryId);
+  if (!d) { main.innerHTML = '<div class="card"><p>この日記は見つかりませんでした。</p></div>'; return; }
+  var html = '<p class="kicker">' + esc(d.date) + '　·　' + esc(topicLabel(d)) + '</p><h1>日記の記録</h1>';
+  html += '<div class="card"><h2>添削後の英文</h2><p style="font-size:16px; line-height:1.9;">' + esc(d.corrected || d.english) + '</p>' +
+    '<button class="btn primary small" id="diaryPlay">▶ お手本を再生</button> <button class="btn plain small" id="diaryStop">⏹ 停止</button></div>';
+  if (d.english && d.corrected && d.english !== d.corrected) {
+    html += '<div class="card"><h2>あなたの英文</h2><p>' + esc(d.english) + '</p></div>';
+  }
+  if (d.natural && d.natural !== d.corrected) {
+    html += '<div class="card"><h2>もっと自然な言い方</h2><p>' + esc(d.natural) + '</p></div>';
+  }
+  if (d.reasons && d.reasons.length) {
+    html += '<div class="card"><h2>直した理由</h2>' + d.reasons.map(function(r){
+      return '<p style="margin-bottom:6px;"><strong>' + esc(r.change) + '</strong>' + (r.reason ? '<br><span class="sub">' + esc(r.reason) + '</span>' : '') + '</p>';
+    }).join('') + '</div>';
+  }
+  if (d.praise) html += '<div class="card"><h2>先生から</h2><p>' + esc(d.praise) + '</p></div>';
+  if (d.missing && d.missing.length) {
+    html += '<div class="card"><h2>書けなかった部分のお手本</h2>' + d.missing.map(function(m){
+      return '<p style="margin-bottom:8px;">' + (m.ja ? '<span class="sub">' + esc(m.ja) + '</span><br>' : '') + '<span style="font-size:16px;">' + esc(m.en) + '</span></p>';
+    }).join('') + '</div>';
+  }
+  if (d.answers && d.answers.length) {
+    html += '<div class="card"><h2>あなたが日本語で書いたこと</h2>' + d.questions.map(function(q, i){
+      return '<p style="margin-bottom:4px;"><span class="sub">' + esc(q) + '</span><br>' + esc(d.answers[i] || '（無記入）') + '</p>';
+    }).join('') + '</div>';
+  }
+  if (d.phrases && d.phrases.length) {
+    html += '<div class="card"><h2>単語帳に入れた語</h2>' + d.phrases.map(function(p){
+      return '<div class="hintRow"><span class="en">' + esc(p.en) + '</span><span class="sub">' + esc(p.ja) + '</span></div>';
+    }).join('') + '</div>';
+  }
+  html += '<div class="card"><h2>自分の録音</h2><p class="sub">録音はこの端末の中だけに残ります。別のスマホやパソコンでは再生できません。</p><div id="diaryRecs"><p class="sub">読み込み中...</p></div></div>';
+  html += '<div class="card"><h2>発音チェック</h2><p class="sub">点数は出していません。色の付いた語が、直してみたいところです。</p>';
+  if (d.pronunciationChecks && d.pronunciationChecks.length) {
+    d.pronunciationChecks.forEach(function(ch, i){
+      html += '<div style="margin-bottom:10px;"><p class="sub">' + (i === 0 ? 'いちばん新しいチェック' : '前のチェック') + '</p>' + checkHtml(ch.words || [], ch.heard || '') + '</div>';
+    });
+  } else {
+    html += '<p class="sub">まだ発音チェックの記録はありません。音読画面で「言ってチェックする」を使うと、ここに残ります。</p>';
+  }
+  html += '</div>';
+  html += '<button class="btn primary" id="diaryOndoku">もう一度音読する</button>';
+  main.innerHTML = html;
+  $('#diaryPlay').addEventListener('click', function(){ speak(d.corrected || d.english); });
+  $('#diaryStop').addEventListener('click', stopSpeak);
+  $('#diaryOndoku').addEventListener('click', function(){ state.ondokuDiaryId = d.id; go('ondoku'); });
+  recList(d.id, function(items){
+    var box = $('#diaryRecs');
+    if (!box) return;
+    if (!items.length) { box.innerHTML = '<p class="sub">この端末には、まだこの日記の録音がありません。</p>'; return; }
+    box.innerHTML = items.map(function(it, i){
+      return '<p class="sub">' + (i === 0 ? 'いちばん新しい録音' : '前の録音') + '（' + new Date(it.at).toLocaleString('ja-JP') + '）</p>' +
+        '<audio controls src="' + URL.createObjectURL(it.blob) + '"></audio>';
+    }).join('');
+  });
+}
+
+/* ================= 相棒・ショップ ================= */
+function viewPartner(main){
+  var st = state.app.state;
+  var ps = partnerStage(st.points.lifetime);
+  var html = partnerCardHtml();
+  html += '<div class="card"><p>累計 ' + st.points.lifetime + ' 点　·　使えるポイント ' + st.points.spendable + '</p>' +
+    (ps.next ? '<p class="sub">次の「' + esc(ps.next.name) + '」まであと ' + (ps.next.at - st.points.lifetime) + ' 点</p>' : '<p class="sub">いちばん上の段階です</p>') + '</div>';
+  html += '<div class="card"><h2>ショップ</h2><p class="sub">ポイントは学習だけで増えます。買わなくても、学習はすべて使えます。進化は累計点なので、交換しても成長は止まりません。</p>';
+  (state.app.shop || []).forEach(function(item){
+    var owned = (item.kind === 'frame' ? st.owned.frames : st.owned.stickers).indexOf(item.id) >= 0;
+    html += '<div class="shopRow"><span style="flex:1;">' + esc(item.name) + '</span><strong>' + item.price + ' 点</strong>' +
+      (owned ? '<button class="btn plain small" disabled>入手済み</button>' : '<button class="btn gold small" data-buy="' + item.id + '">交換</button>') + '</div>';
+  });
+  html += '</div>';
+  main.innerHTML = html;
+  main.querySelectorAll('[data-buy]').forEach(function(b){
+    b.addEventListener('click', function(){
+      run('buyItem', [state.token, b.getAttribute('data-buy')], function(res){
+        state.app.state = res.state;
+        toast('入手しました');
+        go('partner');
+      }, function(e){ toast(friendlyErr(e)); });
+    });
+  });
+}
+
+/* ================= 設定 ================= */
+function viewSettings(main){
+  var app = state.app, st = app.state, p = app.profile;
+  var levelNames = { '1':'1 はじめの一歩', '2':'2 ミックス', '3':'3 自分の言葉で' };
+  var gender = localStorage.getItem(VOICE_GENDER_KEY) || 'auto';
+  var html = '<p class="kicker">設定</p><h1>設定</h1>';
+  html += '<div class="card"><h2>アカウント</h2><p>' + esc(p.name) + '（' + esc(p.id) + '）</p>' +
+    '<button class="btn plain" id="logoutBtn">ログアウト</button></div>';
+  html += '<div class="card"><h2>レベル</h2><div class="seg" id="levelSeg">' +
+    Object.keys(levelNames).map(function(l){ return '<button data-level="' + l + '" class="' + (p.level === l ? 'on' : '') + '">' + levelNames[l] + '</button>'; }).join('') + '</div></div>';
+  html += '<div class="card"><h2>読み上げのアクセント</h2><div class="seg" id="setAccentSeg">' +
+    Object.keys(ACCENT_NAMES).map(function(a){ return '<button data-accent="' + a + '" class="' + (p.accent === a ? 'on' : '') + '">' + ACCENT_NAMES[a] + '</button>'; }).join('') + '</div>' +
+    '<label>声の種類</label><div class="seg" id="genderSeg">' +
+    [['auto','おまかせ'],['female','女性の声'],['male','男性の声']].map(function(g){ return '<button data-gender="' + g[0] + '" class="' + (gender === g[0] ? 'on' : '') + '">' + g[1] + '</button>'; }).join('') + '</div>' +
+    '<button class="btn plain small" id="voiceTest">声を聞いてみる</button></div>';
+  html += '<div class="card"><h2>連続記録の保護</h2><p>今週の残り ' + st.streak.freezesLeftThisWeek + ' 回。1日休んでも、保護があれば連続は途切れません。ポイントや進化は減りません。</p></div>';
+  html += '<div class="card"><h2>パスコード変更</h2>' +
+    '<label>今のパスコード</label><input type="password" id="pwNow">' +
+    '<label>新しいパスコード</label><input type="password" id="pwNew">' +
+    '<label>新しいパスコード（確認）</label><input type="password" id="pwNew2">' +
+    '<div id="pwErr"></div><button class="btn primary" id="pwBtn">パスコードを変更する</button></div>';
+  html += '<div class="card"><h2>データ</h2>' +
+    '<p class="sub">日記・単語帳・ポイントはサーバー（スプレッドシート）に保存されます。自分の声の録音だけは、この端末の中に残ります。</p>' +
+    '<button class="btn plain" id="exportBtn">日記を書き出す（JSON）</button></div>';
+  main.innerHTML = html;
+  $('#logoutBtn').addEventListener('click', function(){ doLogout(false); });
+  main.querySelectorAll('#levelSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      run('setLevel', [state.token, b.getAttribute('data-level')], function(profile){
+        state.app.profile = profile;
+        toast('レベルを変更しました');
+        go('settings');
+      });
+    });
+  });
+  main.querySelectorAll('#setAccentSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      run('setAccent', [state.token, b.getAttribute('data-accent')], function(profile){
+        state.app.profile = profile;
+        toast('アクセントを変更しました');
+        go('settings');
+      });
+    });
+  });
+  main.querySelectorAll('#genderSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      localStorage.setItem(VOICE_GENDER_KEY, b.getAttribute('data-gender'));
+      go('settings');
+    });
+  });
+  $('#voiceTest').addEventListener('click', function(){ speak('Hello! Let me read your diary aloud.'); });
+  $('#pwBtn').addEventListener('click', function(){
+    var now = $('#pwNow').value, nw = $('#pwNew').value, nw2 = $('#pwNew2').value;
+    if (!now || !nw) { $('#pwErr').innerHTML = '<div class="err">全部の欄を入力してください。</div>'; return; }
+    if (nw !== nw2) { $('#pwErr').innerHTML = '<div class="err">確認用パスコードが一致しません。</div>'; return; }
+    run('changePasscode', [state.token, now, nw], function(){
+      toast('パスコードを変更しました');
+      $('#pwNow').value = ''; $('#pwNew').value = ''; $('#pwNew2').value = '';
+    }, function(e){ $('#pwErr').innerHTML = '<div class="err">' + esc(friendlyErr(e)) + '</div>'; });
+  });
+  $('#exportBtn').addEventListener('click', function(){
+    run('exportData', [state.token], function(data){
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'nikki-space-diaries.json';
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    });
+  });
+}
+
+/* ================= 起動 ================= */
+state.session = loadSession();
+if (state.token) {
+  run('checkSession', [state.token], function(res){
+    if (res && res.id) { state.profile = res; bootData(); }
+    else go('login');
+  }, function(){ go('login'); });
+} else {
+  go('login');
+}
+</script>
+</body>
+</html>
