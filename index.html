@@ -111,7 +111,8 @@ var state = {
   ondokuDiaryId: null,
   diaryBackView: 'home',
   currentDiaryId: null,
-  reviewDoneToday: false
+  reviewDoneToday: false,
+  loadingMsg: ''
 };
 
 function $(sel){ return document.querySelector(sel); }
@@ -145,6 +146,7 @@ function go(view){
   render();
   window.scrollTo(0,0);
 }
+function goLoading(msg){ state.loadingMsg = msg || ''; go('loading'); }
 function render(){
   var v = state.view;
   var tabs = $('#tabs');
@@ -165,7 +167,7 @@ function render(){
   $('#headName').textContent = state.profile ? state.profile.name : '';
 
   var main = $('#main');
-  if (v === 'loading') main.innerHTML = '<div class="loading">⏳ 読み込み中...</div>';
+  if (v === 'loading') main.innerHTML = '<div class="loading">⏳ ' + esc(state.loadingMsg || '読み込み中...') + '</div>';
   else if (v === 'login') viewLogin(main);
   else if (v === 'home') viewHome(main);
   else if (v === 'review') viewReview(main);
@@ -477,7 +479,7 @@ function chooseTopic(topic, topicOther){
   state.session.topicOther = topicOther;
   state.session.mode = 'normal'; state.session.hintsSkipped = false;
   saveSession();
-  toast('質問を用意しています...');
+  goLoading('質問を用意しています…');
   run('aiQuestions', [state.token, topic, topicOther], function(res){
     state.session.questions = res.questions;
     state.session.answers = [];
@@ -485,7 +487,7 @@ function chooseTopic(topic, topicOther){
     saveSession();
     if (state.app.yesterdayPhrases.length) go('reuse');
     else go('qa');
-  }, function(e){ toast(friendlyErr(e)); });
+  }, function(e){ var m = friendlyErr(e); if (state.view === 'loading') go('topic'); toast(m); });
 }
 function viewReuse(main){
   var phrases = state.app.yesterdayPhrases;
@@ -525,10 +527,9 @@ function qaAdvance(value){
     fetchHints(function(){ go('hints'); });
   }
 }
-function fetchHints(done){ fetchHintsTry(done, 0); }
+function fetchHints(done){ goLoading('ヒントを用意しています…'); fetchHintsTry(done, 0); }
 function fetchHintsTry(done, attempt){
   var s = state.session;
-  toast('ヒントを用意しています...');
   run('aiHints', [state.token, {
     topic: s.topic, topicOther: s.topicOther,
     questions: s.questions, answers: s.answers,
@@ -544,7 +545,7 @@ function fetchHintsTry(done, attempt){
     if (done) done();
   }, function(e){
     if (attempt < 1) { fetchHintsTry(done, attempt + 1); }
-    else toast(friendlyErr(e));
+    else { var m = friendlyErr(e); if (state.view === 'loading') go('hints'); toast(m); }
   });
 }
 
@@ -609,7 +610,8 @@ function viewWrite(main){
       hints: s.hints, yesterdayPhrases: state.app.yesterdayPhrases
     }], function(res){
       state.session.draft = res.draft; saveSession();
-      $('#draftArea').innerHTML = '<div class="card"><h2>下書き</h2><p>' + esc(res.draft) + '</p>' +
+      var da = $('#draftArea'); if (!da) return;
+      da.innerHTML = '<div class="card"><h2>下書き</h2><p>' + esc(res.draft) + '</p>' +
         '<button class="btn gold small" id="useDraft">下書きを使う</button></div>';
       $('#useDraft').addEventListener('click', function(){
         ta.value = res.draft; state.session.english = res.draft; saveSession();
@@ -622,7 +624,7 @@ function viewWrite(main){
     var english = ta.value.trim();
     if (!english) { toast('英文を書いてから進んでください'); return; }
     state.session.english = english; saveSession();
-    var btn = this; btn.disabled = true; btn.textContent = '添削しています...';
+    goLoading('添削しています…');
     run('aiCorrect', [state.token, {
       english: english,
       questions: s.questions, answers: s.answers,
@@ -633,7 +635,7 @@ function viewWrite(main){
       state.session.correction = res;
       saveSession();
       go('correct');
-    }, function(e){ btn.disabled = false; btn.textContent = '添削してもらう'; toast(friendlyErr(e)); });
+    }, function(e){ var m = friendlyErr(e); if (state.view === 'loading') go('write'); toast(m); });
   });
 }
 
@@ -978,7 +980,7 @@ function viewOndoku(main){
   $('#ondokuSave').addEventListener('click', function(){
     if (isRe) { toast('音読の記録を保存しました'); go('diary'); return; }
     var s = state.session;
-    var btn = this; btn.disabled = true; btn.textContent = '保存しています...';
+    goLoading('保存しています…');
     run('saveDiary', [state.token, {
       topic: s.topic, topicOther: s.topicOther,
       questions: s.questions, answers: s.answers,
@@ -991,7 +993,7 @@ function viewOndoku(main){
         state.session = null; saveSession();
         run('getAppData', [state.token], function(app){ state.app = app; go('done'); }, function(){ go('done'); });
       });
-    }, function(e){ btn.disabled = false; btn.textContent = '保存して終わる'; toast(friendlyErr(e)); });
+    }, function(e){ var m = friendlyErr(e); if (state.view === 'loading') go('ondoku'); toast(m); });
   });
 }
 
