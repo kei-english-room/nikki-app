@@ -56,7 +56,7 @@ label{display:block; font-size:13px; font-weight:700; margin:10px 0 4px;}
 .diff-del{text-decoration:line-through; color:var(--bad); background:#fdeceb; border-radius:3px; padding:0 2px;}
 .diff-add{color:var(--teal-dark); background:#e2f2ec; border-radius:3px; padding:0 2px; font-weight:700;}
 .word-ok{color:var(--ok); font-weight:700;}
-.word-bad{color:var(--bad); font-weight:700; text-decoration:underline;}
+.word-bad{color:var(--bad); font-weight:700; text-decoration:underline; cursor:pointer;}
 .hintRow{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line);}
 .hintRow:last-child{border-bottom:none;}
 .en{font-weight:700;}
@@ -698,6 +698,15 @@ function speak(text, opts){
 }
 function stopSpeak(){ if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e){} } currentUtter = null; }
 
+/* 発音チェックで赤くなった語をタップすると、その語の正しい発音を読み上げる */
+document.addEventListener('click', function(e){
+  var t = e.target;
+  if (t && t.classList && t.classList.contains('word-bad')) {
+    var w = (t.textContent || '').trim();
+    if (w) speak(w, { speed: 'slow' });
+  }
+});
+
 /* 発音チェック：お手本の各単語が聞き取り結果に含まれているか（点数は出さない） */
 function tokenizeWords(s){
   return String(s || '').toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9' ]/g, ' ').split(/\s+/).filter(function(w){ return !!w; });
@@ -712,29 +721,66 @@ function checkHtml(words, heard){
   var bad = words.filter(function(w){ return !w.ok; }).slice(0, 6);
   var html = '<p style="font-size:16px; line-height:1.9;">' + spans + '</p>' +
     '<p class="sub">あなた: ' + esc(heard) + '</p>';
-  if (bad.length) html += '<p>直してみたい語：' + bad.map(function(w){ return '「' + esc(w.word) + '」'; }).join('、') + '。お手本をもう一度聞いて、ゆっくり言ってみてください。</p>';
+  if (bad.length) html += '<p>直してみたい語：' + bad.map(function(w){ return '「' + esc(w.word) + '」'; }).join('、') + '。お手本をもう一度聞いて、ゆっくり言ってみてください。</p>' +
+    '<p class="sub">赤い語をタップすると、正しい発音を聞けます。</p>';
   else html += '<p>お手本の語を、一通り言えています。もう一度お手本と聞き比べてみましょう。</p>';
   return html;
 }
-function sayAndCheck(modelText, targetEl, onDone){
+function sayAndCheck(modelText, targetEl, onDone, onSettled){
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { targetEl.innerHTML = '<p class="sub">このブラウザでは音声認識が使えません。お手本を聞いて、自分で繰り返してください。</p>'; return; }
-  var rec = new SR();
-  rec.lang = state.app ? state.app.profile.accent : 'en-US';
-  rec.interimResults = false;
-  rec.maxAlternatives = 1;
-  targetEl.innerHTML = '<p class="sub">聞いています…お手本の文を、声に出してください。</p>';
-  var finished = false;
-  rec.onresult = function(ev){
-    finished = true;
-    var heard = ev.results[0][0].transcript || '';
-    var words = compareWords(modelText, heard);
-    targetEl.innerHTML = checkHtml(words, heard);
-    if (onDone) onDone({ heard: heard, words: words, accent: state.app.profile.accent, at: new Date().toISOString() });
-  };
-  rec.onerror = function(){ if (!finished) targetEl.innerHTML = '<p class="sub">うまく聞き取れませんでした。マイクの許可を確認して、もう一度どうぞ。</p>'; };
-  rec.onend = function(){ if (!finished && !targetEl.querySelector('.word-ok') && !targetEl.querySelector('.word-bad')) { /* 結果なし */ } };
-  try { rec.start(); } catch(e){ targetEl.innerHTML = '<p class="sub">音声認識を始められませんでした。</p>'; }
+  if (!SR) { targetEl.innerHTML = '<p class="sub">このブラウザでは音声認識が使えません。お手本を聞いて、自分で繰り返してください。</p>'; if (onSettled) onSettled(); return; }
+  stopSpeak();
+  targetEl.innerHTML = '<p class="sub">マイクを準備しています…</p>';
+  var attempts = 0, finished = false, retryQueued = false, settled = false;
+  function settle(){ if (!settled) { settled = true; if (onSettled) onSettled(); } }
+  function retryOrFail(msg){
+    if (finished || retryQueued) return;
+    if (attempts < 3) {
+      retryQueued = true;
+      targetEl.innerHTML = '<p class="sub">聞き取りをやり直しています…</p>';
+      setTimeout(function(){ retryQueued = false; startRec(); }, 400);
+    } else {
+      targetEl.innerHTML = '<p class="sub">' + msg + '</p>';
+      settle();
+    }
+  }
+  function startRec(){
+    if (finished) return;
+    attempts++;
+    var rec = new SR();
+    rec.lang = state.app ? state.app.profile.accent : 'en-US';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    targetEl.innerHTML = '<p class="sub">聞いています…お手本の文を、声に出してください。</p>';
+    rec.onresult = function(ev){
+      finished = true;
+      var heard = ev.results[0][0].transcript || '';
+      var words = compareWords(modelText, heard);
+      targetEl.innerHTML = checkHtml(words, heard);
+      if (onDone) onDone({ heard: heard, words: words, accent: state.app.profile.accent, at: new Date().toISOString() });
+      settle();
+    };
+    rec.onerror = function(ev){
+      if (ev && ev.error === 'not-allowed') {
+        finished = true;
+        targetEl.innerHTML = '<p class="sub">マイクの許可が必要です。ブラウザの設定でマイクを許可してから、もう一度どうぞ。</p>';
+        settle();
+        return;
+      }
+      retryOrFail('うまく聞き取れませんでした。マイクの許可を確認して、もう一度どうぞ。');
+    };
+    rec.onend = function(){ retryOrFail('うまく聞き取れませんでした。もう一度どうぞ。'); };
+    try { rec.start(); } catch(e){ retryOrFail('音声認識を始められませんでした。もう一度どうぞ。'); }
+  }
+  /* 先にマイクの許可を済ませてから認識を始めると、初回の失敗が減る */
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      startRec();
+    }).catch(function(){ startRec(); });
+  } else {
+    startRec();
+  }
 }
 
 /* 録音（端末内 IndexedDB にだけ保存） */
@@ -871,12 +917,31 @@ function viewCorrect(main){
 }
 
 /* ================= 音読 ================= */
-function ondokuText(){
-  if (state.ondokuDiaryId) {
-    var d = findDiary(state.ondokuDiaryId);
-    return d ? (d.corrected || d.english) : '';
+function ondokuParts(){
+  var src = null;
+  if (state.ondokuDiaryId) src = findDiary(state.ondokuDiaryId);
+  else if (state.session && state.session.correction) src = state.session.correction;
+  if (!src) return [];
+  var parts = [];
+  var main = src.corrected || src.english || '';
+  if (main) parts.push({ label: '添削後の文', text: main });
+  if (src.natural && src.natural !== main) parts.push({ label: 'もっと自然な言い方', text: src.natural });
+  if (src.missing && src.missing.length) {
+    src.missing.forEach(function(m){ if (m && m.en) parts.push({ label: '書けなかった部分のお手本', text: m.en }); });
   }
-  return state.session && state.session.correction ? state.session.correction.corrected : '';
+  return parts;
+}
+function practiceText(src){
+  if (!src) return '';
+  var out = [];
+  var main = src.corrected || src.english || '';
+  if (main) out.push(main);
+  if (src.natural && src.natural !== main) out.push(src.natural);
+  if (src.missing && src.missing.length) src.missing.forEach(function(m){ if (m && m.en) out.push(m.en); });
+  return out.join(' ');
+}
+function ondokuText(){
+  return ondokuParts().map(function(p){ return p.text; }).join(' ');
 }
 function findDiary(id){
   var list = state.app ? state.app.diaries : [];
@@ -886,8 +951,15 @@ function findDiary(id){
 function viewOndoku(main){
   var text = ondokuText();
   var isRe = !!state.ondokuDiaryId;
+  var parts = ondokuParts();
+  var textHtml = parts.length > 1
+    ? parts.map(function(p, i){
+        return '<p class="sub"' + (i ? ' style="margin-top:12px;"' : '') + '>' + esc(p.label) + '</p>' +
+          '<p style="font-size:16px; line-height:1.9;">' + esc(p.text) + '</p>';
+      }).join('')
+    : '<p style="font-size:16px; line-height:1.9;">' + esc(text) + '</p>';
   var html = '<p class="kicker">音読</p><h1>聞いて、言って、録る</h1>' +
-    '<div class="card"><p style="font-size:16px; line-height:1.9;">' + esc(text) + '</p>' +
+    '<div class="card">' + textHtml +
     '<label>アクセント</label><div class="seg" id="accentSeg">' +
     Object.keys(ACCENT_NAMES).map(function(a){
       return '<button data-accent="' + a + '" class="' + (state.app.profile.accent === a ? 'on' : '') + '">' + ACCENT_NAMES[a].replace('英語','') + '</button>';
@@ -934,6 +1006,7 @@ function viewOndoku(main){
   });
   $('#stopBtn').addEventListener('click', stopSpeak);
   var lastBlob = null;
+  var recStarting = false;
   $('#recBtn').addEventListener('click', function(){
     var btn = this;
     if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -941,14 +1014,26 @@ function viewOndoku(main){
       btn.textContent = '🎙 録音する';
       return;
     }
+    if (recStarting) return;
+    recStarting = true;
+    btn.textContent = 'マイクを準備中…';
     stopSpeak();
-    startRecording(function(blob){
+    var p = startRecording(function(blob){
       lastBlob = blob;
       var diaryKey = state.ondokuDiaryId || '__pending';
       recSave(diaryKey, blob, function(ok){ toast(ok ? '録音しました' : '録音を保存できませんでした'); });
       if (!isRe && state.session) { state.session.ondokuDone = true; saveSession(); }
       $('#recAudio').innerHTML = '<audio controls src="' + URL.createObjectURL(blob) + '"></audio>';
-    }).then(function(mr){ if (mr) btn.textContent = '⏹ 録音を止める'; });
+    });
+    if (p && p.then) {
+      p.then(function(mr){
+        recStarting = false;
+        btn.textContent = mr ? '⏹ 録音を止める' : '🎙 録音する';
+      });
+    } else {
+      recStarting = false;
+      btn.textContent = '🎙 録音する';
+    }
   });
   $('#recPlayBtn').addEventListener('click', function(){
     var diaryKey = state.ondokuDiaryId || '__pending';
@@ -962,6 +1047,10 @@ function viewOndoku(main){
     window.open(url, '_blank');
   });
   $('#checkBtn').addEventListener('click', function(){
+    var btn = this;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = '聞き取り中…';
     sayAndCheck(text, $('#checkResult'), function(check){
       if (!isRe && state.session) {
         state.session.checks.unshift(check);
@@ -975,6 +1064,9 @@ function viewOndoku(main){
           toast('発音チェックの結果を保存しました');
         });
       }
+    }, function(){
+      btn.disabled = false;
+      btn.textContent = '言ってチェックする';
     });
   });
   $('#ondokuSave').addEventListener('click', function(){
@@ -1123,7 +1215,7 @@ function viewDiary(main){
   html += '</div>';
   html += '<button class="btn primary" id="diaryOndoku">もう一度音読する</button>';
   main.innerHTML = html;
-  $('#diaryPlay').addEventListener('click', function(){ speak(d.corrected || d.english); });
+  $('#diaryPlay').addEventListener('click', function(){ speak(practiceText(d)); });
   $('#diaryStop').addEventListener('click', stopSpeak);
   $('#diaryOndoku').addEventListener('click', function(){ state.ondokuDiaryId = d.id; go('ondoku'); });
   recList(d.id, function(items){
