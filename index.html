@@ -640,44 +640,58 @@ function viewWrite(main){
 }
 
 /* ================= 音声（読み上げ・録音・発音チェック） ================= */
-var ACCENT_NAMES = { 'en-US':'アメリカ英語', 'en-GB':'イギリス英語', 'en-CA':'カナダ英語', 'en-AU':'オーストラリア英語', 'en-NZ':'ニュージーランド英語' };
-function accentName(a){ return ACCENT_NAMES[a] || 'アメリカ英語'; }
+var ACCENT_NAMES = { 'en-US':'アメリカ英語', 'en-GB':'イギリス英語', 'en-CA':'カナダ英語', 'en-AU':'オーストラリア英語' };
+function normAccent(a){ return ACCENT_NAMES[a] ? a : 'en-US'; }
+function accentName(a){ return ACCENT_NAMES[normAccent(a)]; }
 var NOVELTY_VOICES = ['Albert','Bad News','Bahh','Bells','Boing','Bubbles','Cellos','Deranged','Fred','Good News','Grandma','Grandpa','Hysterical','Jester','Junior','Organ','Pipe Organ','Superstar','Trinoids','Whisper','Wobble','Zarvox'];
 var VOICE_PREF = {
   'en-US': ['Samantha','Ava','Allison','Susan','Zoe','Joelle','Nicky','Google US English','Aaron','Nathan','Arthur'],
   'en-GB': ['Daniel','Kate','Serena','Martha','Stephanie','Google UK English Female','Google UK English Male','George','Brian'],
   'en-CA': ['Victoria','Google US English','Samantha'],
-  'en-AU': ['Karen','Lee','Catherine','Google UK English Female'],
-  'en-NZ': ['Karen','Lee','Daniel']
+  'en-AU': ['Karen','Lee','Catherine','Google UK English Female']
 };
 var FEMALE_NAMES = ['Samantha','Ava','Allison','Susan','Zoe','Joelle','Nicky','Kate','Serena','Martha','Stephanie','Karen','Catherine','Victoria','Fiona','Moira','Tessa','Veena','Google UK English Female'];
 var MALE_NAMES = ['Aaron','Nathan','Arthur','Daniel','Lee','George','Brian','Alex','David','Google UK English Male','Google US English'];
 var voiceCache = [];
 function refreshVoices(){ try { voiceCache = window.speechSynthesis ? speechSynthesis.getVoices() : []; } catch(e){ voiceCache = []; } }
 if (window.speechSynthesis) { refreshVoices(); speechSynthesis.onvoiceschanged = refreshVoices; }
+function voiceQuality(v){
+  var s = (v.name || '') + ' ' + (v.voiceURI || '');
+  if (/compact/i.test(s)) return 0;
+  if (/premium/i.test(s)) return 3;
+  if (/enhanced|neural|eloquence/i.test(s)) return 2;
+  if (/google/i.test(v.name)) return 2;
+  return 1;
+}
 function pickVoice(accent){
   var gender = localStorage.getItem(VOICE_GENDER_KEY) || 'auto';
-  var fallbacks = { 'en-NZ':['en-NZ','en-AU','en-GB','en-US'], 'en-CA':['en-CA','en-US','en-GB'], 'en-AU':['en-AU','en-GB','en-US'], 'en-GB':['en-GB','en-AU','en-US'], 'en-US':['en-US','en-GB'] };
+  accent = normAccent(accent);
+  var fallbacks = { 'en-CA':['en-CA','en-US','en-GB'], 'en-AU':['en-AU','en-GB','en-US'], 'en-GB':['en-GB','en-AU','en-US'], 'en-US':['en-US','en-GB'] };
   var chain = fallbacks[accent] || ['en-US'];
   var usable = voiceCache.filter(function(v){ return NOVELTY_VOICES.indexOf(v.name) < 0 && /^en/i.test(v.lang); });
   for (var c = 0; c < chain.length; c++) {
     var lang = chain[c];
     var cands = usable.filter(function(v){ return v.lang.replace('_','-').toLowerCase().indexOf(lang.toLowerCase()) === 0; });
     if (!cands.length) continue;
+    /* 低品質（compact）の声は機械っぽいので、他に候補があれば外す */
+    var nonCompact = cands.filter(function(v){ return voiceQuality(v) > 0; });
+    if (nonCompact.length) cands = nonCompact;
     if (gender !== 'auto') {
       var names = gender === 'female' ? FEMALE_NAMES : MALE_NAMES;
       var g = cands.filter(function(v){ return names.indexOf(v.name) >= 0; });
       if (g.length) cands = g;
     }
-    var neural = cands.filter(function(v){ return /Google/.test(v.name); });
-    if (neural.length) return neural[0];
-    var prem = cands.filter(function(v){ return /Premium|Enhanced/.test(v.name); });
-    if (prem.length) cands = prem;
+    /* 品質の高い声を優先し、同品質なら VOICE_PREF の名前順 */
     var pref = VOICE_PREF[lang] || [];
-    for (var p = 0; p < pref.length; p++) {
-      for (var i = 0; i < cands.length; i++) { if (cands[i].name === pref[p]) return cands[i]; }
-    }
-    return cands[0];
+    var sorted = cands.slice().sort(function(a, b){
+      var q = voiceQuality(b) - voiceQuality(a);
+      if (q) return q;
+      var pa = pref.indexOf(a.name), pb = pref.indexOf(b.name);
+      if (pa < 0) pa = 99;
+      if (pb < 0) pb = 99;
+      return pa - pb;
+    });
+    return sorted[0];
   }
   return usable[0] || null;
 }
@@ -687,7 +701,7 @@ function speak(text, opts){
   if (!window.speechSynthesis) { toast('このブラウザでは読み上げが使えません'); return; }
   stopSpeak();
   var u = new SpeechSynthesisUtterance(text);
-  var accent = state.app ? state.app.profile.accent : 'en-US';
+  var accent = normAccent(state.app ? state.app.profile.accent : 'en-US');
   var v = pickVoice(accent);
   if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = accent; }
   var speed = opts.speed || 'normal';
@@ -748,7 +762,7 @@ function sayAndCheck(modelText, targetEl, onDone, onSettled){
     if (finished) return;
     attempts++;
     var rec = new SR();
-    rec.lang = state.app ? state.app.profile.accent : 'en-US';
+    rec.lang = normAccent(state.app ? state.app.profile.accent : 'en-US');
     rec.interimResults = false;
     rec.maxAlternatives = 1;
     targetEl.innerHTML = '<p class="sub">聞いています…お手本の文を、声に出してください。</p>';
